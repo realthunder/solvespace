@@ -480,7 +480,7 @@ public:
 };
 
 
-#ifdef LIBRARY
+#ifndef LIBRARY
 
 #include "ttf.h"
 
