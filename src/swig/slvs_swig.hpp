@@ -16,6 +16,7 @@ private:
     std::vector<Slvs_Param> Param;
     std::vector<Slvs_Entity> Entity;
     std::vector<Slvs_Constraint> Constraint;
+    std::vector<Slvs_hParam> Dragged;
 
 public:
     std::vector<Slvs_hConstraint> Failed;
@@ -29,11 +30,29 @@ public:
         reset();
     }
 
+    void clearDragged() {
+        Dragged.clear();
+    }
+
+    void addDragged(Slvs_hParam p) {
+        if(!p) return;
+        for(size_t i = 0; i < Dragged.size(); ++i)
+            if(Dragged[i] == p) return;
+        if(Dragged.size() >= 4) return;
+        Dragged.push_back(p);
+    }
+
+    void markDraggedPoint(Slvs_hEntity pt) {
+        addDragged(getEntityParam(pt, 0));
+        addDragged(getEntityParam(pt, 1));
+    }
+
     void reset() {
         ParamMap.clear();
         EntityMap.clear();
         ConstraintMap.clear();
         Failed.clear();
+        Dragged.clear();
         GroupHandle = 1;
         ParamHandle = 0;
         EntityHandle = 0;
@@ -62,6 +81,9 @@ public:
             sys.calculateFaileds = 1;
         }
         sys.findFreeParams = findFreeParams;
+
+        for(size_t i = 0; i < 4; ++i)
+            sys.dragged[i] = (i < Dragged.size()) ? Dragged[i] : 0;
 
         if(!group) group = GroupHandle;
 

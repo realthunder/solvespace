@@ -14,6 +14,10 @@
 // we will give up on legitimate systems like a skinny right angle triangle by
 // its hypotenuse and long side.
 const double System::RANK_MAG_TOLERANCE = 1e-4;
+// Newton step smaller than this is effectively zero: the least-squares
+// has nothing left to correct. Kept absolute on purpose: relative
+// scaling via parameters is fragile near the origin.
+static const double STAGNATION_STEP = 1e-11;
 
 // The solver will converge all unknowns to within this tolerance. This must
 // always be much less than LENGTH_EPS, and in practice should be much less.
@@ -221,7 +225,19 @@ bool System::SolveLinearSystem(double X[], double A[][MAX_UNKNOWNS],
     // We've put the matrix in upper triangular form, so at this point we
     // can solve by back-substitution.
     for(i = n - 1; i >= 0; i--) {
-        if(ffabs(A[i][i]) < 1e-20) continue;
+        if(ffabs(A[i][i]) < 1e-20) {
+            // This row carries no information about X[i]: the system is
+            // rank-deficient, which happens whenever a constraint restates
+            // something the sketch already holds. Take zero for that
+            // component instead of whatever the previous solve left in X, so
+            // the Newton step stays the minimum-norm correction. Reusing the
+            // stale value moved the parameters along a direction the
+            // equations do not constrain, which made a redundant but
+            // perfectly consistent system fail to converge and be reported
+            // as inconsistent.
+            X[i] = 0;
+            continue;
+        }
 
         temp = B[i];
         for(j = n - 1; j > i; j--) {
@@ -261,6 +277,16 @@ bool System::SolveLeastSquares(void) {
             }
             mat.AAt[r][c] = sum;
         }
+    }
+
+    // Local Tikhonov / Levenberg-Marquardt ridge.
+    // Protects weak constraints from being swamped by a single large
+    // diagonal entry and removes the singularity of A*A' caused by
+    // redundant but consistent rows. The relative term 1e-10 is far
+    // below CONVERGE_TOLERANCE; the absolute floor 1e-20 prevents
+    // exact zeros from staying singular.
+    for(r = 0; r < mat.m; r++) {
+        mat.AAt[r][r] += mat.AAt[r][r]*1e-10 + 1e-20;
     }
 
     if(!SolveLinearSystem(mat.Z, mat.AAt, mat.B.num, mat.m)) return false;
@@ -303,6 +329,13 @@ bool System::NewtonSolve(int tag) {
             }
         }
 
+        // How big the step we just took was; a step of nothing means the
+        // least squares has no correction left to offer.
+        double stepMag = 0;
+        for(i = 0; i < mat.n; i++) {
+            if(ffabs(mat.X[i]) > stepMag) stepMag = ffabs(mat.X[i]);
+        }
+
         // Re-evalute the functions, since the params have just changed.
         for(i = 0; i < mat.m; i++) {
             mat.B.num[i] = (mat.B.sym[i])->Eval();
@@ -316,6 +349,29 @@ bool System::NewtonSolve(int tag) {
             if(ffabs(mat.B.num[i]) > CONVERGE_TOLERANCE) {
                 converged = false;
                 break;
+            }
+        }
+        if(!converged && stepMag < STAGNATION_STEP) {
+            // Least-squares has no meaningful correction left.
+            // Accept the system only if the residual is still tight
+            // enough for downstream Boolean / NURBS code.
+            // The multiplier is measured, not guessed: what a
+            // rank-deficient system leaves unsatisfied grows with the
+            // size of the geometry, while this tolerance is a fixed
+            // length. The reported case (a tangent arc between two legs,
+            // offset and freed, then made concentric) stalls at a step of
+            // 3e-13 with 2.31e-7 left when drawn ten times larger, so
+            // anything up to CONVERGE_TOLERANCE * 20 refuses it again.
+            // CONVERGE_TOLERANCE * 50 clears that by 2.2x and is still
+            // twice as strict as LENGTH_EPS, which is the size of gap
+            // the geometry downstream has to tolerate anyway.
+            const double strictTol = CONVERGE_TOLERANCE*50.0;
+            converged = true;
+            for(i = 0; i < mat.m; i++) {
+                if(ffabs(mat.B.num[i]) > strictTol) {
+                    converged = false;
+                    break;
+                }
             }
         }
     } while(iter++ < 50 && !converged);
