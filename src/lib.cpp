@@ -88,7 +88,7 @@ void Slvs_Solve(Slvs_System *ssys, Slvs_hGroup shg)
     SYS.param.Clear();
     SYS.entity.Clear();
     SYS.eq.Clear();
-    SYS.dragged.Clear();
+    SYS.dragged.clear();
     SK.param.Clear();
     SK.entity.Clear();
     SK.constraint.Clear();
@@ -240,10 +240,9 @@ default: dbp("bad constraint type %d", sc->type); return;
         SK.constraint.Add(&c);
     }
 
-    for(i = 0; i < (int)arraylen(ssys->dragged); i++) {
+    for(i = 0; ssys->dragged && i < ssys->ndragged; i++) {
         if(ssys->dragged[i]) {
-            hParam hp = { ssys->dragged[i] };
-            SYS.dragged.Add(&hp);
+            SYS.dragged.insert(ssys->dragged[i]);
         }
     }
 
@@ -302,7 +301,7 @@ default: dbp("bad constraint type %d", sc->type); return;
     SYS.param.Clear();
     SYS.entity.Clear();
     SYS.eq.Clear();
-    SYS.dragged.Clear();
+    SYS.dragged.clear();
 
     SK.param.Clear();
     SK.entity.Clear();

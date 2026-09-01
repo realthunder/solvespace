@@ -81,11 +81,7 @@ void System::EvalJacobian(void) {
 }
 
 bool System::IsDragged(hParam p) {
-    hParam *pp;
-    for(pp = dragged.First(); pp; pp = dragged.NextAfter(pp)) {
-        if(p.v == pp->v) return true;
-    }
-    return false;
+    return dragged.find(p.v) != dragged.end();
 }
 
 void System::SolveBySubstitution(void) {
@@ -591,5 +587,5 @@ void System::Clear(void) {
     entity.Clear();
     param.Clear();
     eq.Clear();
-    dragged.Clear();
+    dragged.clear();
 }

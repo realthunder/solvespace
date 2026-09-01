@@ -65,9 +65,9 @@ void Example3d(void)
 
     /* Let's tell the solver to keep the second point as close to constant
      * as possible, instead moving the first point. */
-    sys.dragged[0] = 4;
-    sys.dragged[1] = 5;
-    sys.dragged[2] = 6;
+    Slvs_hParam dragged[] = { 4, 5, 6 };
+    sys.dragged = dragged;
+    sys.ndragged = 3;
 
     /* Now that we have written our system, we solve. */
     Slvs_Solve(&sys, g);

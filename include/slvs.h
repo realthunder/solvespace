@@ -168,8 +168,12 @@ typedef struct {
      * that parameter, and attempt to change it as little as possible even
      * if that requires it to change other parameters more.
      *
-     * Unused members of this array should be set to zero. */
-    Slvs_hParam         dragged[4];
+     * Point dragged at an array of ndragged handles. There is no limit on
+     * the length: an inverted scheme, where everything except the grabbed
+     * geometry is marked, needs as many entries as the sketch has params.
+     * Leave both members zero when nothing is being dragged. */
+    Slvs_hParam         *dragged;
+    int                 ndragged;
 
     /* If the solver fails, then it can determine which constraints are
      * causing the problem. But this is a relatively slow process (for

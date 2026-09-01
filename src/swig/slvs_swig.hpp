@@ -6,6 +6,7 @@
 #include <string.h>
 #include <vector>
 #include <map>
+#include <set>
 #include "slvs.h"
 
 class System {
@@ -17,6 +18,7 @@ private:
     std::vector<Slvs_Entity> Entity;
     std::vector<Slvs_Constraint> Constraint;
     std::vector<Slvs_hParam> Dragged;
+    std::set<Slvs_hParam> Light;
 
 public:
     std::vector<Slvs_hConstraint> Failed;
@@ -38,8 +40,31 @@ public:
         if(!p) return;
         for(size_t i = 0; i < Dragged.size(); ++i)
             if(Dragged[i] == p) return;
-        if(Dragged.size() >= 4) return;
         Dragged.push_back(p);
+    }
+
+    void clearLight() {
+        Light.clear();
+    }
+
+    void addLight(Slvs_hParam p) {
+        if(p) Light.insert(p);
+    }
+
+    void addLightPoint(Slvs_hEntity pt) {
+        addLight(getEntityParam(pt, 0));
+        addLight(getEntityParam(pt, 1));
+    }
+
+    void markDraggedAllExceptLight() {
+        Dragged.clear();
+        Dragged.reserve(ParamMap.size());
+        for(std::map<Slvs_hParam,Slvs_Param>::const_iterator it = ParamMap.begin();
+            it != ParamMap.end(); ++it)
+        {
+            if(Light.find(it->first) == Light.end())
+                Dragged.push_back(it->first);
+        }
     }
 
     void markDraggedPoint(Slvs_hEntity pt) {
@@ -53,6 +78,7 @@ public:
         ConstraintMap.clear();
         Failed.clear();
         Dragged.clear();
+        Light.clear();
         GroupHandle = 1;
         ParamHandle = 0;
         EntityHandle = 0;
@@ -82,8 +108,8 @@ public:
         }
         sys.findFreeParams = findFreeParams;
 
-        for(size_t i = 0; i < 4; ++i)
-            sys.dragged[i] = (i < Dragged.size()) ? Dragged[i] : 0;
+        sys.dragged = Dragged.empty() ? 0 : &Dragged[0];
+        sys.ndragged = (int)Dragged.size();
 
         if(!group) group = GroupHandle;
 

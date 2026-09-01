@@ -406,9 +406,12 @@ public:
     ParamList                       param;
     IdList<Equation,hEquation>      eq;
 
-    // A list of parameters that are being dragged; these are the ones that
-    // we should put as close as possible to their initial positions.
-    List<hParam>                    dragged;
+    // The parameters that are being dragged; these are the ones that we
+    // should put as close as possible to their initial positions. Held as a
+    // set of handles because the caller may mark every parameter but the
+    // grabbed one, and IsDragged is then asked once per column per Newton
+    // iteration; a linear scan made that quadratic in the sketch size.
+    std::set<uint32_t>              dragged;
 
     enum {
         // In general, the tag indicates the subsys that a variable/equation

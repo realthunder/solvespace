@@ -434,7 +434,7 @@ void SolveSpaceUI::ForceReferences(void) {
 }
 
 void SolveSpaceUI::MarkDraggedParams(void) {
-    sys.dragged.Clear();
+    sys.dragged.clear();
 
     for(int i = -1; i < SS.GW.pending.points.n; i++) {
         hEntity hp;
@@ -453,14 +453,14 @@ void SolveSpaceUI::MarkDraggedParams(void) {
             switch(pt->type) {
                 case Entity::POINT_N_TRANS:
                 case Entity::POINT_IN_3D:
-                    sys.dragged.Add(&(pt->param[0]));
-                    sys.dragged.Add(&(pt->param[1]));
-                    sys.dragged.Add(&(pt->param[2]));
+                    sys.dragged.insert(pt->param[0].v);
+                    sys.dragged.insert(pt->param[1].v);
+                    sys.dragged.insert(pt->param[2].v);
                     break;
 
                 case Entity::POINT_IN_2D:
-                    sys.dragged.Add(&(pt->param[0]));
-                    sys.dragged.Add(&(pt->param[1]));
+                    sys.dragged.insert(pt->param[0].v);
+                    sys.dragged.insert(pt->param[1].v);
                     break;
             }
         }
@@ -471,7 +471,7 @@ void SolveSpaceUI::MarkDraggedParams(void) {
             Entity *dist = SK.GetEntity(circ->distance);
             switch(dist->type) {
                 case Entity::DISTANCE:
-                    sys.dragged.Add(&(dist->param[0]));
+                    sys.dragged.insert(dist->param[0].v);
                     break;
             }
         }
@@ -481,10 +481,10 @@ void SolveSpaceUI::MarkDraggedParams(void) {
         if(norm) {
             switch(norm->type) {
                 case Entity::NORMAL_IN_3D:
-                    sys.dragged.Add(&(norm->param[0]));
-                    sys.dragged.Add(&(norm->param[1]));
-                    sys.dragged.Add(&(norm->param[2]));
-                    sys.dragged.Add(&(norm->param[3]));
+                    sys.dragged.insert(norm->param[0].v);
+                    sys.dragged.insert(norm->param[1].v);
+                    sys.dragged.insert(norm->param[2].v);
+                    sys.dragged.insert(norm->param[3].v);
                     break;
                 // other types are locked, so not draggable
             }
